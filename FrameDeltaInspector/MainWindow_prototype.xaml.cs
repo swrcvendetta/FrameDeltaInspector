@@ -12,7 +12,7 @@ using System.Windows.Media.Imaging;
 
 namespace FrameDeltaInspector
 {
-    public partial class MainWindow : Window
+    public partial class MainWindow_prototype : Window
     {
         public string FramePrefix { get; private set; }
         public string FrameExtension { get; private set; }
@@ -22,7 +22,7 @@ namespace FrameDeltaInspector
         public int FrameNumberDigits { get; private set; }
         public string FramePath { get; private set; }
 
-        public MainWindow()
+        public MainWindow_prototype()
         {
             InitializeComponent();
         }
