@@ -1,12 +1,62 @@
 ﻿<Window x:Class="FrameDeltaInspector.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:FrameDeltaInspector"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Title="Frame Diff Viewer" Height="400" Width="800">
     <Grid>
+        <!-- Menu Bar -->
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <!-- For the Menu -->
+            <RowDefinition Height="*"/>
+            <!-- For the Main Layout -->
+            <RowDefinition Height="Auto"/>
+            <!-- For the Slider and Frame Info -->
+        </Grid.RowDefinitions>
 
+        <!-- Menu -->
+        <Menu Grid.Row="0">
+            <MenuItem Header="Datei">
+                <MenuItem Header="Öffnen" Click="MenuItem_Open_Click"/>
+                <MenuItem Header="Schließen" Click="MenuItem_Close_Click"/>
+                <!-- Closes the current image sequence -->
+                <Separator/>
+                <MenuItem Header="Beenden" Click="MenuItem_Exit_Click"/>
+                <!-- Exits the application -->
+            </MenuItem>
+        </Menu>
+
+        <!-- Main Layout -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <!-- Left: Current Frame -->
+            <Border Grid.Column="0" BorderBrush="Black" BorderThickness="1" Margin="10">
+                <Image Name="CurrentFrameImage" Stretch="Uniform" />
+            </Border>
+
+            <!-- Right: Delta Frame -->
+            <Border Grid.Column="1" BorderBrush="Black" BorderThickness="1" Margin="10">
+                <Image Name="DeltaFrameImage" Stretch="Uniform" />
+            </Border>
+        </Grid>
+
+        <!-- Bottom: Slider and frame info -->
+        <StackPanel Grid.ColumnSpan="2" Grid.Row="2" Orientation="Vertical" VerticalAlignment="Bottom" Margin="10">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="10">
+                <!-- Slider -->
+                <Slider Name="FrameSlider" Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True"
+                        ValueChanged="FrameSlider_ValueChanged" Width="300" />
+
+                <!-- Frame number input -->
+                <TextBox Name="FrameInput" Width="50" Margin="10,0,0,0" TextAlignment="Center" 
+                         Text="{Binding ElementName=FrameSlider, Path=Value, Mode=TwoWay}" />
+
+                <!-- Frame labels -->
+                <TextBlock Name="FrameLabel" Text="Frame 0 of 100" VerticalAlignment="Center" Margin="10,0,0,0"/>
+            </StackPanel>
+        </StackPanel>
     </Grid>
 </Window>
