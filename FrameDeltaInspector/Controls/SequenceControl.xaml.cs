@@ -25,6 +25,12 @@ namespace FrameDeltaInspector.Controls
             };
             UpdateView();
         }
+
+        public Sequence GetSequence()
+        {
+            return Sequence;
+        }
+
         private void UpdateView()
         {
             // Load and display the current frame

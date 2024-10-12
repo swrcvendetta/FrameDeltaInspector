@@ -1,10 +1,12 @@
-﻿using FrameDeltaInspector.Models;
+﻿using FrameDeltaInspector.Controls;
+using FrameDeltaInspector.Models;
 using Microsoft.Win32;
 using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media.Imaging;
 
 namespace FrameDeltaInspector.Windows
 {
@@ -19,20 +21,46 @@ namespace FrameDeltaInspector.Windows
         public MainWindow()
         {
             InitializeComponent();
-            SequenceASelectFrame.MouseDown += new System.Windows.Input.MouseButtonEventHandler(Event_SequenceASelectFrame_MouseDown);
-            SequenceBSelectFrame.MouseDown += new System.Windows.Input.MouseButtonEventHandler(Event_SequenceBSelectFrame_MouseDown);
+            filesControl.SequenceASelectFrame.MouseDown += new System.Windows.Input.MouseButtonEventHandler(Event_SequenceASelectFrame_MouseDown);
+            filesControl.SequenceBSelectFrame.MouseDown += new System.Windows.Input.MouseButtonEventHandler(Event_SequenceBSelectFrame_MouseDown);
+            compareControl.FrameSlider.ValueChanged += FrameSlider_ValueChanged;
+            compareControl.CompareFilterControl.SelectionChanged += new EventHandler(Event_CompareFilterControl_OnSelectionChanged);
+        }
+
+        private void Event_CompareFilterControl_OnSelectionChanged(object? sender, EventArgs e)
+        {
+            Debug.WriteLine("selection changed, recalculating filters");
+            UpdateDeltaFrame();
+        }
+
+        private void UpdateDeltaFrame()
+        {
+            BitmapImage imgA = LoadFrame(compareControl.SequenceAFrame.GetSequence(), (int)compareControl.FrameSlider.Value);
+            BitmapImage imgB = LoadFrame(compareControl.SequenceBFrame.GetSequence(), (int)compareControl.FrameSlider.Value);
+
+            foreach (var item in compareControl.CompareFilterControl.ListBoxFilters.Items)
+            {
+                if(item is SelectCompareFilterControl filterControl)
+                {
+                    CompareFilter currentFilter = filterControl.GetCompareFilter();
+                    if (currentFilter == null)
+                        continue;
+                    BitmapImage tmp = currentFilter.Compare(imgA, imgB);
+                    compareControl.DeltaFrame.FrameImage.Source = tmp;
+                }
+            }
         }
 
         private void Event_SequenceBSelectFrame_MouseDown(object sender, MouseButtonEventArgs e)
         {
             Selected = SequenceB;
-            sequencePropertyControl.SetSequence(Selected);
+            filesControl.sequencePropertyControl.SetSequence(Selected);
         }
 
         private void Event_SequenceASelectFrame_MouseDown(object sender, MouseButtonEventArgs e)
         {
             Selected = SequenceA;
-            sequencePropertyControl.SetSequence(Selected);
+            filesControl.sequencePropertyControl.SetSequence(Selected);
         }
 
         private void MenuItem_Add_Click(object sender, RoutedEventArgs e)
@@ -51,15 +79,15 @@ namespace FrameDeltaInspector.Windows
         private void SetSequenceA(Sequence seq)
         {
             SequenceA = seq;
-            SequenceASelectFrame.SetSequence(SequenceA);
-            SequenceAFrame.SetSequence(SequenceA);
+            filesControl.SequenceASelectFrame.SetSequence(SequenceA);
+            compareControl.SequenceAFrame.SetSequence(SequenceA);
         }
 
         private void SetSequenceB(Sequence seq)
         {
             SequenceB = seq;
-            SequenceBSelectFrame.SetSequence(SequenceB);
-            SequenceBFrame.SetSequence(SequenceB);
+            filesControl.SequenceBSelectFrame.SetSequence(SequenceB);
+            compareControl.SequenceBFrame.SetSequence(SequenceB);
         }
 
         private void MenuItem_Close_Click(object sender, RoutedEventArgs e)
@@ -74,7 +102,47 @@ namespace FrameDeltaInspector.Windows
 
         private void FrameSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            //UpdateUI();
+            //if (frames.Count == 0) return;
+
+            // Load and display the current frame
+            compareControl.SequenceAFrame.FrameImage.Source = LoadFrame(compareControl.SequenceAFrame.GetSequence(), (int)compareControl.FrameSlider.Value);
+            compareControl.SequenceBFrame.FrameImage.Source = LoadFrame(compareControl.SequenceBFrame.GetSequence(), (int)compareControl.FrameSlider.Value);
+
+            // Load and display the delta frame
+            if ((int)compareControl.FrameSlider.Value > compareControl.SequenceAFrame.GetSequence().StartFrameNumber)
+            {
+                var previousFrame = LoadFrame(compareControl.SequenceAFrame.GetSequence(), (int)compareControl.FrameSlider.Value - 1);
+                var currentFrame = LoadFrame(compareControl.SequenceBFrame.GetSequence(), (int)compareControl.FrameSlider.Value);
+                if (previousFrame != null && currentFrame != null)
+                {
+                    //BitmapImage deltaFrame = CalculateDelta(previousFrame, currentFrame);
+                    //DeltaFrameImage.Source = deltaFrame;
+                    UpdateDeltaFrame();
+                }
+            }
+            else
+            {
+                // If no previous frame exists, just clear the delta image
+                //DeltaFrameImage.Source = null;
+            }
+
+            //FrameLabel.Text = $"Frame {(int)FrameSlider.Value} of {EndFrameNumber}";
+        }
+
+        private BitmapImage LoadFrame(Sequence sequence, int frameNumber)
+        {
+            // Ensure the frame number is properly formatted
+            string fileName = $"{sequence.FramePrefix}{frameNumber.ToString($"D{sequence.FrameNumberDigits}")}{sequence.FrameExtension}"; // Append the file extension and format frame number
+
+            // Use the directory of the first frame path for loading images
+            string directoryPath = sequence.FramePath;
+            string filePath = Path.Combine(directoryPath, fileName);
+
+            if (File.Exists(filePath))
+            {
+                return new BitmapImage(new Uri(filePath));
+            }
+            return null;
         }
 
         private Sequence OpenSequence()
